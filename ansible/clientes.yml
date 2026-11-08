@@ -4,6 +4,21 @@
   hosts: db, app, cli
   become: yes
   tasks:
+    # A box nao configura a eth1 (rede privada): pede IP ao DHCP do arq.
+    # metric alta para o gateway da rede privada nao tomar a rota padrao da NAT
+    - name: Configurar eth1 via DHCP
+      copy:
+        dest: /etc/network/interfaces.d/eth1
+        content: |
+          auto eth1
+          iface eth1 inet dhcp
+              metric 1000
+      register: eth1
+
+    - name: Subir eth1
+      shell: ifdown eth1 || true; ifup eth1
+      when: eth1.changed
+
     - name: Instalar Autofs
       apt:
         name: autofs
