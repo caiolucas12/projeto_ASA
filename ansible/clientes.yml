@@ -55,9 +55,17 @@
         block: |
           supersede domain-name-servers {{ ip_arq }};
           supersede domain-search "{{ dominio }}";
+    # impede o dhclient de reescrever o resolv.conf a cada renovacao do lease
+    - name: Desativar a escrita do resolv.conf pelo dhclient
+      copy:
+        dest: /etc/dhcp/dhclient-enter-hooks.d/nodnsupdate
+        content: |
+          make_resolv_conf() { :; }
+        mode: '0644'
     - name: Escrever resolv.conf com o DNS do arq
       copy:
         dest: /etc/resolv.conf
         content: |
+          domain {{ dominio }}
           search {{ dominio }}
           nameserver {{ ip_arq }}

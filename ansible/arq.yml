@@ -55,7 +55,8 @@
     - name: Criar Volume Group (dados) com os 3 discos adicionais
       lvg:
         vg: dados
-        pvs: /dev/sdb,/dev/sdc,/dev/sdd
+        # a ordem sda..sdd muda a cada boot: pega os discos de 10 GB pelos facts
+        pvs: "{{ ansible_devices | dict2items | selectattr('key', 'match', 'sd') | selectattr('value.size', 'equalto', '10.00 GB') | map(attribute='key') | map('regex_replace', '^', '/dev/') | join(',') }}"
 
     - name: Criar Logical Volume (ifpb) de 15GB
       lvol:

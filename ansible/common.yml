@@ -3,6 +3,18 @@
   hosts: all
   become: yes
   tasks:
+    # o disco de boot muda de nome (sda..sdd) na arq; o grub ja esta instalado,
+    # entao o dist-upgrade nao precisa rodar grub-install
+    - name: Pré-configurar o grub-pc (evita erro no dist-upgrade sem terminal)
+      debconf:
+        name: grub-pc
+        question: "{{ item.q }}"
+        value: "{{ item.v }}"
+        vtype: "{{ item.t }}"
+      loop:
+        - { q: grub-pc/install_devices, v: "", t: multiselect }
+        - { q: grub-pc/install_devices_empty, v: "true", t: boolean }
+
     - name: Atualizar repositórios e pacotes do sistema
       apt:
         update_cache: yes

@@ -10,6 +10,31 @@ vagrant ssh arq -c "cd /vagrant/ansible && ansible-playbook -i /vagrant/teste/in
 
 A saida completa de cada VM esta em `teste/saida.txt` (gerada pelo `verificar.sh`).
 
+## Reteste final do zero (vagrant destroy -f + vagrant up)
+Passos: `vagrant destroy -f`, `vagrant up` (4 VMs `running`), chave insecure copiada para a arq (README), `apt-get install ansible` na arq (ansible core 2.14.18), depois duas vezes:
+`vagrant ssh arq -c "cd /vagrant/ansible && ansible-playbook -i /vagrant/teste/inventory.ini site.yml"`
+
+1a execucao:
+```text
+app : ok=29 changed=25 unreachable=0 failed=0 skipped=0
+arq : ok=32 changed=30 unreachable=0 failed=0 skipped=0
+cli : ok=30 changed=26 unreachable=0 failed=0 skipped=0
+db  : ok=28 changed=24 unreachable=0 failed=0 skipped=0
+```
+2a execucao (idempotencia):
+```text
+app : ok=25 changed=0 unreachable=0 failed=0 skipped=1
+arq : ok=27 changed=0 unreachable=0 failed=0 skipped=0
+cli : ok=25 changed=0 unreachable=0 failed=0 skipped=1
+db  : ok=24 changed=0 unreachable=0 failed=0 skipped=1
+```
+Depois `bash /vagrant/teste/verificar.sh` nas 4 VMs: todos os itens da tabela abaixo conferidos de novo (IPs .135/.134/.154/.50, DNS direto/reverso, LVM 15.00g em /dados, NFS all_squash anonuid=1003, autofs nfs4 em db/app/cli com arquivos de root e gabriel gravados como 1003:1004, sshd, usuarios/ifpb/sudo, chrony America/Recife, mariadb/apache2/firefox-esr/xauth). Ao fim, `vagrant destroy -f`.
+
+Falhas achadas no reteste do zero e corrigidas:
+- arq: a ordem dos discos muda a cada boot (o disco do sistema apareceu como `sdd`), entao `pvs: /dev/sdb,/dev/sdc,/dev/sdd` pegaria o disco do sistema. Agora o VG usa os discos de 10 GB pelos facts (`ansible_devices`).
+- arq: o `dist-upgrade` falhava no `grub-pc` (grub-install no disco errado). Agora o debconf do grub-pc e pre-configurado para nao rodar grub-install (o grub ja esta instalado na box).
+- db/app/cli: o `resolv.conf` era reescrito pelo dhclient a cada renovacao do lease (lease de 180 s), quebrando a idempotencia. Agora um hook `make_resolv_conf() { :; }` impede a reescrita.
+
 ## Itens
 
 | Item | Resultado | Evidencia |
