@@ -52,3 +52,11 @@ senha (gabriel):  Permission denied (publickey).
 root:            Permission denied (publickey).
 authorized_keys: 1 chave em cada usuario, 0 com 'insecure'
 ```n
+## Resolucao de nomes (item 2)
+Adicionado registro cli (192.168.56.50) na zona direta/reversa. getent hosts e ping por nome em db, app e cli:
+```text
+db : arq=192.168.56.135 app=192.168.56.154 cli=192.168.56.50 ; ping cli.gabriel.caio.devops OK
+app: arq=192.168.56.135 db=192.168.56.134  cli=192.168.56.50 ; ping cli.gabriel.caio.devops OK
+cli: arq=192.168.56.135 db=192.168.56.134  app=192.168.56.154 ; ping arq.gabriel.caio.devops OK
+```
+Hospedeiro Windows: nao testado/alterado (usar hosts-windows.txt, ver README).

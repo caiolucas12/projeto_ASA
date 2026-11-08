@@ -1,4 +1,4 @@
-# Projeto ASA
+﻿# Projeto ASA
 
 Projeto 01 - DevOps com Vagrant e Ansible.
 
@@ -95,16 +95,16 @@ VBoxManage list hostonlyifs
 
 ## Resolução de nomes no host
 
-O host Windows não usa o DNS do arq. Adicione ao arquivo
-`C:\Windows\System32\drivers\etc\hosts` (como administrador) as linhas abaixo, trocando pelos IPs reais
-definidos em `group_vars/all.yml`:
+O host Windows não usa o DNS do arq. Há duas opções (o projeto não altera o Windows sozinho):
 
-```
-192.168.56.1XX  arq.gabriel.caio.devops
-192.168.56.1YY  db.gabriel.caio.devops
-192.168.56.1ZZ  app.gabriel.caio.devops
-```
+**Opção 1 - arquivo hosts.** Abra o Bloco de Notas como Administrador, abra
+`C:\Windows\System32\drivers\etc\hosts` e cole as linhas de `hosts-windows.txt` (IPs de `ansible/group_vars/all.yml`;
+o `cli` recebe 192.168.56.50 por DHCP). Teste: `ping arq.gabriel.caio.devops`.
 
+**Opção 2 - DNS no adaptador host-only.** Em Configurações de rede > adaptador "VirtualBox Host-Only Ethernet Adapter" >
+IPv4 > DNS preferencial `192.168.56.135`.
+
+Dentro de cli, db e app a resolução já funciona pelo DNS do arq: `getent hosts db.gabriel.caio.devops`.
 ## Chave SSH dos usuários gabriel e caio
 
 Em `ansible/common.yml` são criados o grupo `ifpb` e os usuários `gabriel` e `caio` (com `generate_ssh_key`).

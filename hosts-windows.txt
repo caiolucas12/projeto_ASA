@@ -1,0 +1,5 @@
+﻿# Copie estas linhas para C:\Windows\System32\drivers\etc\hosts (editor como Administrador)
+192.168.56.135  arq.gabriel.caio.devops
+192.168.56.134  db.gabriel.caio.devops
+192.168.56.154  app.gabriel.caio.devops
+192.168.56.50   cli.gabriel.caio.devops
