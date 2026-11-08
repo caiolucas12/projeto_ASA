@@ -1,0 +1,101 @@
+# Configurações comuns a todas as VMs
+- name: Configurações Gerais (Todas as VMs)
+  hosts: all
+  become: yes
+  tasks:
+    - name: Atualizar repositórios e pacotes do sistema
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Configurar timezone para America/Recife
+      timezone:
+        name: America/Recife
+
+    - name: Instalar Chrony e Cliente NFS
+      apt:
+        name:
+          - chrony
+          - nfs-common
+        state: present
+
+    # Sincronização de horário com o pool brasileiro
+    - name: Configurar Chrony com pool.ntp.br
+      copy:
+        dest: /etc/chrony/chrony.conf
+        content: |
+          pool pool.ntp.br iburst
+          makestep 1 3
+      notify: Restart Chrony
+
+    - name: Criar grupo ifpb
+      group:
+        name: ifpb
+        state: present
+
+    - name: Criar usuários gabriel e caio
+      user:
+        name: "{{ item }}"
+        groups: ifpb
+        append: yes
+        generate_ssh_key: yes
+        shell: /bin/bash
+      loop:
+        - gabriel
+        - caio
+
+    - name: Permitir sudo sem senha para usuários do grupo ifpb
+      copy:
+        dest: /etc/sudoers.d/ifpb
+        content: "%ifpb ALL=(ALL) NOPASSWD: ALL"
+        mode: '0440'
+
+    - name: Criar banner de boas-vindas do SSH
+      copy:
+        dest: /etc/ssh/banner
+        content: "Acesso apenas para pessoas com autorização expressa!!!\n"
+
+    # Segurança do servidor SSH
+    - name: Ajustar configurações de segurança do SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?Banner', line: 'Banner /etc/ssh/banner' }
+        - { regexp: '^#?AllowGroups', line: 'AllowGroups vagrant ifpb' }
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart Chrony
+      service: name=chrony state=restarted
+    - name: Restart SSH
+      service: name=ssh state=restarted
+
+# Montagem automática do NFS (autofs) nos clientes
+- name: Configurar Montagem Automática com Autofs (db, app e cli)
+  hosts: db, app, cli
+  become: yes
+  tasks:
+    - name: Instalar Autofs
+      apt:
+        name: autofs
+        state: present
+
+    - name: Adicionar mapeamento /var no auto.master
+      lineinfile:
+        path: /etc/auto.master
+        line: '/var /etc/auto.nfs --timeout=60'
+      notify: Restart Autofs
+
+    - name: Criar regra auto.nfs para apontar para o servidor arq
+      copy:
+        dest: /etc/auto.nfs
+        content: "nfs -fstype=nfs,rw,sync 192.168.56.135:/dados/nfs"
+      notify: Restart Autofs
+
+  handlers:
+    - name: Restart Autofs
+      service: name=autofs state=restarted

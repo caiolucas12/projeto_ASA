@@ -1,0 +1,17 @@
+# Host cliente: Firefox com X11
+- name: Configurar Host Cliente (cli)
+  hosts: cli
+  become: yes
+  tasks:
+    - name: Instalar pacotes Firefox e X11 Auth
+      apt:
+        name:
+          - firefox-esr
+          - xauth
+        state: present
+
+    - name: Habilitar X11 Forwarding no SSH
+      lineinfile:
+        path: /etc/ssh/ssh_config
+        regexp: '^#?\s*ForwardX11 '
+        line: '    ForwardX11 yes'
