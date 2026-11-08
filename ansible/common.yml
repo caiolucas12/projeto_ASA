@@ -41,20 +41,17 @@
         append: yes
         generate_ssh_key: yes
         shell: /bin/bash
+      register: chaves
       loop:
         - gabriel
         - caio
 
-    # Forma mais simples: reutiliza a chave pública insecure do Vagrant
-    # (a mesma que o usuário vagrant já usa), assim o acesso por chave funciona
-    # sem gerar pares de chaves. Em produção, usar a chave pública de cada pessoa.
-    - name: Autorizar chave pública para gabriel e caio
+    # Autoriza a chave pública gerada para cada usuário no próprio authorized_keys
+    - name: Autorizar a chave pública de cada usuário
       authorized_key:
-        user: "{{ item }}"
-        key: "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
-      loop:
-        - gabriel
-        - caio
+        user: "{{ item.item }}"
+        key: "{{ item.ssh_public_key }}"
+      loop: "{{ chaves.results }}"
 
     - name: Permitir sudo sem senha para usuários do grupo ifpb
       copy:
