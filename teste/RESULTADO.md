@@ -33,10 +33,22 @@ A saida completa de cada VM esta em `teste/saida.txt` (gerada pelo `verificar.sh
 | apache2 com index.html (nomes e matriculas) | passou | `Gabriel (20251380035), Caio (20251380034)` via `wget localhost` na app |
 | firefox-esr e xauth no cli | passou | `dpkg -l` ii ii |
 | Resolver nomes a partir do hospedeiro (Windows) | nao testado | exige DNS 192.168.56.135 no Windows; nao alterei a rede do Windows |
-| Gerar chaves SSH dos usuarios gabriel/caio funcionando por login | nao testado | so conferi usuarios e sshd; nao fiz login como eles |
+| Chaves SSH de gabriel/caio (par proprio, publica no proprio authorized_keys) | passou | ver secao abaixo |
 
 ## Falha encontrada e corrigida
 
 Em db/app/cli a `eth1` ficava `DOWN` (a box nao configura a rede privada), logo sem IP por DHCP e sem montar o NFS.
 Correcao em `ansible/clientes.yml`: `/etc/network/interfaces.d/eth1` com `inet dhcp` (metric 1000 para nao tomar a rota padrao da NAT) e `ifup`.
 Depois disso db/app/cli receberam .134/.154/.50 e o autofs montou o NFS.
+
+## Login SSH por chave (arq)
+
+Cada usuario tem seu par de chaves (`generate_ssh_key`); a publica de cada um vai no proprio `authorized_keys` (sem chave insecure do Vagrant). O usuario `vagrant` segue funcionando (Ansible rodou via `vagrant ssh`).
+
+```text
+gabriel (chave propria): LOGIN_OK / gabriel
+caio (chave propria):    LOGIN_OK / caio
+senha (gabriel):  Permission denied (publickey).
+root:            Permission denied (publickey).
+authorized_keys: 1 chave em cada usuario, 0 com 'insecure'
+```n
