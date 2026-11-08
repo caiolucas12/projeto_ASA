@@ -1,0 +1,135 @@
+# Configurações comuns a todas as VMs
+- name: Configurações Gerais (Todas as VMs)
+  hosts: all
+  become: yes
+  tasks:
+    - name: Atualizar repositórios e pacotes do sistema
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Configurar timezone para America/Recife
+      timezone:
+        name: America/Recife
+
+    - name: Instalar Chrony e Cliente NFS
+      apt:
+        name:
+          - chrony
+          - nfs-common
+        state: present
+
+    # Sincronização de horário com o pool brasileiro
+    - name: Configurar Chrony com pool.ntp.br
+      copy:
+        dest: /etc/chrony/chrony.conf
+        content: |
+          pool pool.ntp.br iburst
+          makestep 1 3
+      notify: Restart Chrony
+
+    - name: Criar grupo ifpb
+      group:
+        name: ifpb
+        state: present
+
+    - name: Criar usuários gabriel e caio
+      user:
+        name: "{{ item }}"
+        groups: ifpb
+        append: yes
+        generate_ssh_key: yes
+        shell: /bin/bash
+      loop:
+        - gabriel
+        - caio
+
+    # Forma mais simples: reutiliza a chave pública insecure do Vagrant
+    # (a mesma que o usuário vagrant já usa), assim o acesso por chave funciona
+    # sem gerar pares de chaves. Em produção, usar a chave pública de cada pessoa.
+    - name: Autorizar chave pública para gabriel e caio
+      authorized_key:
+        user: "{{ item }}"
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+      loop:
+        - gabriel
+        - caio
+
+    - name: Permitir sudo sem senha para usuários do grupo ifpb
+      copy:
+        dest: /etc/sudoers.d/ifpb
+        content: "%ifpb ALL=(ALL) NOPASSWD: ALL"
+        mode: '0440'
+
+    - name: Criar banner de boas-vindas do SSH
+      copy:
+        dest: /etc/ssh/banner
+        content: "Acesso apenas para pessoas com autorização expressa!!!\n"
+
+    # Segurança do servidor SSH
+    - name: Ajustar configurações de segurança do SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?Banner', line: 'Banner /etc/ssh/banner' }
+        - { regexp: '^#?AllowGroups', line: 'AllowGroups vagrant ifpb' }
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart Chrony
+      service: name=chrony state=restarted
+    - name: Restart SSH
+      service: name=ssh state=restarted
+
+# Montagem automática do NFS (autofs) nos clientes
+- name: Configurar Montagem Automática com Autofs (db, app e cli)
+  hosts: db, app, cli
+  become: yes
+  tasks:
+    - name: Instalar Autofs
+      apt:
+        name: autofs
+        state: present
+
+    - name: Criar diretorio /var/nfs
+      file:
+        path: /var/nfs
+        state: directory
+    # Mapa direto: so o /var/nfs e montado, o resto do /var nao e afetado
+    - name: Adicionar mapa direto no auto.master
+      lineinfile:
+        path: /etc/auto.master
+        line: '/- /etc/auto.nfs'
+      notify: Restart Autofs
+    - name: Criar regra auto.nfs para apontar para o servidor arq
+      copy:
+        dest: /etc/auto.nfs
+        content: "/var/nfs -fstype=nfs,rw arq.{{ dominio }}:/dados/nfs\n"
+      notify: Restart Autofs
+  handlers:
+    - name: Restart Autofs
+      service: name=autofs state=restarted
+
+# DNS do arq nos clientes (db, app e cli)
+- name: Configurar DNS do arq (db, app e cli)
+  hosts: db, app, cli
+  become: yes
+  tasks:
+    # O dhclient sobrescreve o resolv.conf; estas linhas forcam o DNS do arq
+    - name: Fixar DNS e dominio de busca no dhclient
+      blockinfile:
+        path: /etc/dhcp/dhclient.conf
+        block: |
+          supersede domain-name-servers {{ ip_arq }};
+          supersede domain-search "{{ dominio }}";
+    - name: Escrever resolv.conf com o DNS do arq
+      copy:
+        dest: /etc/resolv.conf
+        content: |
+          search {{ dominio }}
+          nameserver {{ ip_arq }}

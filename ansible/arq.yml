@@ -1,0 +1,104 @@
+# Servidor de arquivos: DHCP, DNS (bind9), LVM e NFS
+- name: Configurar Servidor de Arquivos (arq)
+  hosts: arq
+  become: yes
+  tasks:
+    - name: Instalar pacotes DHCP, Bind9, NFS Server e LVM2 (lvm2 antes do LVM)
+      apt:
+        name:
+          - isc-dhcp-server
+          - bind9
+          - bind9utils
+          - nfs-kernel-server
+          - lvm2
+        state: present
+
+    - name: Copiar arquivo de configuração do DHCP
+      template:
+        src: templates/dhcpd.conf.j2
+        dest: /etc/dhcp/dhcpd.conf
+      notify: Restart DHCP
+
+    - name: Definir interface do DHCP (eth1)
+      lineinfile:
+        path: /etc/default/isc-dhcp-server
+        regexp: '^INTERFACESv4='
+        line: 'INTERFACESv4="eth1"'
+      notify: Restart DHCP
+
+    # DNS autoritativo: opções, zonas direta e reversa
+    - name: Configurar opções do Bind9
+      template:
+        src: templates/named.conf.options.j2
+        dest: /etc/bind/named.conf.options
+      notify: Restart Bind
+
+    - name: Declarar zonas direta e reversa
+      template:
+        src: templates/named.conf.local.j2
+        dest: /etc/bind/named.conf.local
+      notify: Restart Bind
+
+    - name: Criar arquivo da zona direta
+      template:
+        src: templates/zona-direta.j2
+        dest: "/etc/bind/db.{{ dominio }}"
+      notify: Restart Bind
+
+    - name: Criar arquivo da zona reversa
+      template:
+        src: templates/zona-reversa.j2
+        dest: /etc/bind/db.192.168.56
+      notify: Restart Bind
+
+    # LVM: 3 discos adicionais em um volume group
+    - name: Criar Volume Group (dados) com os 3 discos adicionais
+      lvg:
+        vg: dados
+        pvs: /dev/sdb,/dev/sdc,/dev/sdd
+
+    - name: Criar Logical Volume (ifpb) de 15GB
+      lvol:
+        vg: dados
+        lv: ifpb
+        size: 15g
+
+    - name: Formatar o LV em ext4
+      filesystem:
+        fstype: ext4
+        dev: /dev/dados/ifpb
+
+    - name: Montar partição /dados no fstab
+      mount:
+        path: /dados
+        src: /dev/dados/ifpb
+        fstype: ext4
+        state: mounted
+
+    - name: Criar usuário nfs-ifpb sem shell de acesso
+      user:
+        name: nfs-ifpb
+        shell: /usr/sbin/nologin
+      register: nfs_user
+
+    - name: Criar diretório /dados/nfs
+      file:
+        path: /dados/nfs
+        state: directory
+        owner: nfs-ifpb
+        group: nfs-ifpb
+        mode: '0755'
+
+    - name: Configurar compartilhamento no /etc/exports
+      lineinfile:
+        path: /etc/exports
+        line: "/dados/nfs 192.168.56.0/24(rw,sync,no_wdelay,all_squash,anonuid={{ nfs_user.uid }},anongid={{ nfs_user.group }})"
+      notify: Exportar NFS
+
+  handlers:
+    - name: Restart Bind
+      service: name=bind9 state=restarted
+    - name: Restart DHCP
+      service: name=isc-dhcp-server state=restarted
+    - name: Exportar NFS
+      command: exportfs -ra

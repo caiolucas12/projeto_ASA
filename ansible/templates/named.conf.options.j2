@@ -1,0 +1,13 @@
+options {
+  directory "/var/cache/bind";
+  listen-on { 127.0.0.1; {{ ip_arq }}; };
+  // Recursao apenas para a rede interna
+  recursion yes;
+  allow-recursion { 127.0.0.1; 192.168.56.0/24; };
+  // Aceita requisições apenas da rede interna
+  allow-query { 127.0.0.1; 192.168.56.0/24; };
+  // Encaminha para DNS recursivos
+  forwarders { 1.1.1.1; 8.8.8.8; };
+  dnssec-validation no;
+  listen-on-v6 { any; };
+};

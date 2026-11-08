@@ -1,0 +1,14 @@
+# Servidor de aplicação (Apache)
+- name: Configurar Servidor de Aplicação (app)
+  hosts: app
+  become: yes
+  tasks:
+    - name: Instalar Apache2
+      apt:
+        name: apache2
+        state: present
+
+    - name: Criar página HTML customizada (matrículas vêm de group_vars/all.yml)
+      template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html

@@ -1,0 +1,9 @@
+# Servidor de banco de dados
+- name: Configurar Servidor de Banco de Dados (db)
+  hosts: db
+  become: yes
+  tasks:
+    - name: Instalar MariaDB
+      apt:
+        name: mariadb-server
+        state: present
