@@ -1,15 +1,13 @@
 # Projeto ASA
-
 Projeto 01 - DevOps com Vagrant e Ansible.
 
-- **Integrantes:** Gabriel e Caio
+- **Integrantes:** Gabriel (matrícula 20251380035) e Caio (matrícula 20251380034)
 - **Disciplina:** Administração de Sistemas Abertos
 - **Instituição:** IFPB, campus João Pessoa
 - **Professor:** Leonidas Lima
 - **Período:** 2026.2
 
 ## Descrição
-
 O `Vagrantfile` cria 4 VMs Debian (`debian/bookworm64`) no VirtualBox e o Ansible configura cada uma:
 
 | VM  | Função |
@@ -22,80 +20,78 @@ O `Vagrantfile` cria 4 VMs Debian (`debian/bookworm64`) no VirtualBox e o Ansibl
 Domínio: `gabriel.caio.devops` (ex.: `arq.gabriel.caio.devops`).
 
 ## Estrutura de arquivos
-
 ```
-Vagrantfile              # define as 4 VMs
+Vagrantfile              # define as 4 VMs (detecta Windows automaticamente)
+hosts-windows.txt        # linhas para o arquivo hosts do Windows
 Doc/                     # enunciado do projeto (PDF)
 ansible/
   ansible.cfg
-  inventory.ini          # hosts e portas SSH
+  inventory.ini          # hosts e portas SSH (uso com Ansible no WSL/Linux)
   site.yml               # playbook principal (executa todos na ordem)
-  common.yml             # configuração comum: usuários, SSH, chrony, autofs/NFS, DNS
+  common.yml             # usuários, SSH, chrony, timezone
   arq.yml  db.yml  app.yml  cli.yml
+  clientes.yml           # roda por último: eth1 via DHCP, autofs/NFS e DNS do arq em db, app e cli
   group_vars/all.yml     # variáveis (nomes, matrículas, IPs)
   templates/             # dhcpd, named (DNS), zonas, index.html
+teste/
+  inventory.ini          # inventário para rodar de dentro da VM arq
+  rodar.sh               # executa o site.yml dentro da arq
+  verificar.sh           # checagens do enunciado (rodar em cada VM)
+  README.md  RESULTADO.md
 ```
 
 ## Matrículas e IPs
+IPs: arq `.135` (XX=35), db `.134` (YY=34) e app `.154`.
 
-> Matrículas: Gabriel 20251380035, Caio 20251380034. IPs: arq .135 (XX=35), db .134 (YY=34) e app .154.
->
-> Interpretação do "1XY" do app: XY = último dígito de cada matrícula (5 e 4), logo .154. Para mudar, edite **em um único lugar**: `ansible/group_vars/all.yml`
-> (`matricula_gabriel`, `matricula_caio`, `final_arq`, `final_db`, `final_app`).
->
-> Mantenha consistente com o `Vagrantfile`: a variável `XX` deve ser igual a `final_arq`
-> (IP do arq `192.168.56.1XX`).
+**Ponto em aberto - "1XY" do app:** adotamos XY = último dígito de cada matrícula (5 e 4), logo `.154`.
+Se o professor definir outra interpretação, basta mudar **em um único lugar**: `ansible/group_vars/all.yml`
+(`matricula_gabriel`, `matricula_caio`, `final_arq`, `final_db`, `final_app`) e atualizar `hosts-windows.txt`.
+A variável `XX` do `Vagrantfile` deve ser igual a `final_arq` (IP do arq `192.168.56.1XX`).
 
-## Pré-requisitos
-
+## Pré-requisitos (Windows)
 - VirtualBox
 - Vagrant
-- Ansible (no Windows, use o WSL)
 
-## Passo a passo
+Não é preciso instalar o Ansible no Windows: ele é instalado e executado de dentro da VM `arq`
+(a pasta do projeto fica em `/vagrant`). Com WSL/Linux também é possível rodar `ansible/` direto do hospedeiro.
 
-1. Suba primeiro a VM `arq` (ela é o servidor DHCP/DNS das outras):
-
-   ```
-   vagrant up arq
-   ```
-
-2. Suba as demais:
-
+## Passo a passo (PowerShell, na pasta do projeto)
+1. Suba as VMs (o `arq` é o servidor DHCP/DNS das outras; o Vagrant sobe na ordem do `Vagrantfile`):
    ```
    vagrant up
+   vagrant status
    ```
-
-3. Confira as portas SSH e ajuste o `ansible/inventory.ini` (db, app e cli usam `127.0.0.1` com portas diferentes):
-
+2. Confira as portas SSH e, se diferirem de `teste/inventory.ini`, ajuste o arquivo (db, app e cli usam `10.0.2.2` com portas diferentes):
    ```
    vagrant ssh-config
    ```
-
-4. Rode o Ansible (a partir da pasta `ansible/`):
-
+3. Copie a chave insecure do Vagrant para a `arq` (só na primeira vez; o inventário de teste usa `~/.ssh/insecure_key`):
    ```
-   cd ansible
-   ansible-playbook -i inventory.ini site.yml
+   vagrant upload "$env:USERPROFILE\.vagrant.d\insecure_private_key" /home/vagrant/.ssh/insecure_key arq
+   vagrant ssh arq -c "chmod 600 ~/.ssh/insecure_key"
    ```
-
-   No WSL, a chave `~/.vagrant.d/insecure_private_key` usada no inventário precisa existir no home do WSL
-   (copie de `C:\Users\<usuario>\.vagrant.d\`) com `chmod 600`.
+4. (Opcional) Valide a sintaxe dos playbooks:
+   ```
+   vagrant ssh arq -c "cd /vagrant/ansible && ansible-playbook -i ../teste/inventory.ini --syntax-check site.yml"
+   ```
+5. Execute o Ansible de dentro da `arq` (instala o Ansible se faltar):
+   ```
+   vagrant ssh arq -c "bash /vagrant/teste/rodar.sh"
+   ```
+   Alternativa com WSL/Linux: `cd ansible; ansible-playbook -i inventory.ini site.yml`
+   (a chave `~/.vagrant.d/insecure_private_key` precisa existir no home do WSL com `chmod 600`).
 
 ## Rede host-only no Windows
-
-O `Vagrantfile` usa `REDE = "vboxnet0"` (nome no Linux/macOS) no gatilho que remove o servidor DHCP do VirtualBox.
-No Windows o nome costuma ser **"VirtualBox Host-Only Ethernet Adapter"**. Ajuste `REDE` no `Vagrantfile` e,
-no gatilho, o nome da rede DHCP (`HostInterfaceNetworking-<nome da rede>`). Para ver o nome:
-
+O `Vagrantfile` já detecta o Windows e usa `REDE = "VirtualBox Host-Only Ethernet Adapter"` (no Linux/macOS, `vboxnet0`).
+Os gatilhos `trigger` removem o servidor DHCP do VirtualBox nessa rede, antes e depois do `vagrant up`, para que
+quem atenda DHCP seja o `arq`. Se o nome do seu adaptador for outro, ajuste `REDE`. Para ver os nomes:
 ```
 VBoxManage list dhcpservers
 VBoxManage list hostonlyifs
 ```
 
-## Resolução de nomes no host
-
-O host Windows não usa o DNS do arq. Há duas opções (o projeto não altera o Windows sozinho):
+## Resolução de nomes no hospedeiro
+O Windows não usa o DNS do arq. Há duas opções (o projeto não altera o Windows sozinho):
 
 **Opção 1 - arquivo hosts.** Abra o Bloco de Notas como Administrador, abra
 `C:\Windows\System32\drivers\etc\hosts` e cole as linhas de `hosts-windows.txt` (IPs de `ansible/group_vars/all.yml`;
@@ -105,21 +101,21 @@ o `cli` recebe 192.168.56.50 por DHCP). Teste: `ping arq.gabriel.caio.devops`.
 IPv4 > DNS preferencial `192.168.56.135`.
 
 Dentro de cli, db e app a resolução já funciona pelo DNS do arq: `getent hosts db.gabriel.caio.devops`.
-## Chave SSH dos usuários gabriel e caio
 
+## Chave SSH dos usuários gabriel e caio
 Em `ansible/common.yml` são criados o grupo `ifpb` e os usuários `gabriel` e `caio` (com `generate_ssh_key`).
 Por simplicidade, a chave pública *insecure* do Vagrant é autorizada para os dois (`authorized_key`),
 então o acesso funciona com a mesma chave privada do Vagrant:
-
 ```
 ssh -i ~/.vagrant.d/insecure_private_key gabriel@arq.gabriel.caio.devops
 ```
-
 O SSH fica apenas com chave (sem senha, sem root) e com banner de aviso. Em produção, use a chave pública de cada pessoa.
 
 ## Como validar
+Rápido: em cada VM rode `vagrant ssh <vm> -c "bash /vagrant/teste/verificar.sh"`. Resultados anteriores estão em `teste/RESULTADO.md`.
 
+Manualmente:
 - **Nomes (DNS):** em db/app/cli, `nslookup arq.gabriel.caio.devops` e `nslookup app.gabriel.caio.devops`; também `hostname -f`.
 - **NFS:** no arq, `exportfs -v`; em db/app/cli, `ls /var/nfs` (monta via autofs) e crie um arquivo para ver se aparece nas outras VMs.
-- **Apache:** no app, `systemctl status apache2`; acesse `http://<ip do app>` no navegador (página com as matrículas).
+- **Apache:** no app, `systemctl status apache2`; acesse `http://192.168.56.154` no navegador (página com as matrículas).
 - **X11:** conecte ao cli com `ssh -X` e rode `firefox-esr`; a janela deve abrir no host.
