@@ -3,13 +3,14 @@
   hosts: arq
   become: yes
   tasks:
-    - name: Instalar pacotes DHCP, Bind9 e NFS Server
+    - name: Instalar pacotes DHCP, Bind9, NFS Server e LVM2 (lvm2 antes do LVM)
       apt:
         name:
           - isc-dhcp-server
           - bind9
           - bind9utils
           - nfs-kernel-server
+          - lvm2
         state: present
 
     - name: Copiar arquivo de configuração do DHCP
@@ -91,13 +92,13 @@
     - name: Configurar compartilhamento no /etc/exports
       lineinfile:
         path: /etc/exports
-        line: "/dados/nfs 192.168.56.0/24(rw,sync,all_squash,anonuid={{ nfs_user.uid }},anongid={{ nfs_user.group }})"
-      notify: Restart NFS
+        line: "/dados/nfs 192.168.56.0/24(rw,sync,no_wdelay,all_squash,anonuid={{ nfs_user.uid }},anongid={{ nfs_user.group }})"
+      notify: Exportar NFS
 
   handlers:
     - name: Restart Bind
       service: name=named state=restarted
     - name: Restart DHCP
       service: name=isc-dhcp-server state=restarted
-    - name: Restart NFS
-      service: name=nfs-kernel-server state=restarted
+    - name: Exportar NFS
+      command: exportfs -ra
