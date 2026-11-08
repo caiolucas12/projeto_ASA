@@ -1,0 +1,11 @@
+$TTL 604800
+@   IN SOA arq.{{ dominio }}. admin.{{ dominio }}. (
+        1       ; serial
+        604800  ; refresh
+        86400   ; retry
+        2419200 ; expire
+        604800 ) ; negative cache TTL
+@   IN NS  arq.{{ dominio }}.
+1{{ final_arq }} IN PTR arq.{{ dominio }}.
+1{{ final_db }} IN PTR db.{{ dominio }}.
+1{{ final_app }} IN PTR app.{{ dominio }}.

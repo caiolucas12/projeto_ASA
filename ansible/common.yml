@@ -93,7 +93,7 @@
     - name: Criar regra auto.nfs para apontar para o servidor arq
       copy:
         dest: /etc/auto.nfs
-        content: "nfs -fstype=nfs,rw,sync 192.168.56.135:/dados/nfs"
+        content: "nfs -fstype=nfs,rw,sync {{ ip_arq }}:/dados/nfs"
       notify: Restart Autofs
 
   handlers:

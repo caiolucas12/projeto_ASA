@@ -8,15 +8,7 @@
         name: apache2
         state: present
 
-    - name: Criar página HTML customizada
-      copy:
+    - name: Criar página HTML customizada (matrículas vêm de group_vars/all.yml)
+      template:
+        src: templates/index.html.j2
         dest: /var/www/html/index.html
-        content: |
-          <!DOCTYPE html>
-          <html>
-          <head><title>Projeto 01 - DevOps</title></head>
-          <body>
-            <h1>Projeto 01 - DevOps com Vagrant e Ansible</h1>
-            <p><strong>Integrantes:</strong> Gabriel (Matrícula: 35), Caio (Matrícula: YY)</p>
-          </body>
-          </html>

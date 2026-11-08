@@ -13,8 +13,8 @@
         state: present
 
     - name: Copiar arquivo de configuração do DHCP
-      copy:
-        src: files/dhcpd.conf
+      template:
+        src: templates/dhcpd.conf.j2
         dest: /etc/dhcp/dhcpd.conf
       notify: Restart DHCP
 
@@ -24,6 +24,31 @@
         regexp: '^INTERFACESv4='
         line: 'INTERFACESv4="eth1"'
       notify: Restart DHCP
+
+    # DNS autoritativo: opções, zonas direta e reversa
+    - name: Configurar opções do Bind9
+      template:
+        src: templates/named.conf.options.j2
+        dest: /etc/bind/named.conf.options
+      notify: Restart Bind
+
+    - name: Declarar zonas direta e reversa
+      template:
+        src: templates/named.conf.local.j2
+        dest: /etc/bind/named.conf.local
+      notify: Restart Bind
+
+    - name: Criar arquivo da zona direta
+      template:
+        src: templates/zona-direta.j2
+        dest: "/etc/bind/db.{{ dominio }}"
+      notify: Restart Bind
+
+    - name: Criar arquivo da zona reversa
+      template:
+        src: templates/zona-reversa.j2
+        dest: /etc/bind/db.192.168.56
+      notify: Restart Bind
 
     # LVM: 3 discos adicionais em um volume group
     - name: Criar Volume Group (dados) com os 3 discos adicionais
@@ -70,6 +95,8 @@
       notify: Restart NFS
 
   handlers:
+    - name: Restart Bind
+      service: name=named state=restarted
     - name: Restart DHCP
       service: name=isc-dhcp-server state=restarted
     - name: Restart NFS
