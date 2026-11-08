@@ -1,0 +1,63 @@
+# Executa por ultimo: depende do DNS (bind9) e do NFS ja configurados no arq
+# Montagem automática do NFS (autofs) nos clientes
+- name: Configurar Montagem Automática com Autofs (db, app e cli)
+  hosts: db, app, cli
+  become: yes
+  tasks:
+    # A box nao configura a eth1 (rede privada): pede IP ao DHCP do arq.
+    # metric alta para o gateway da rede privada nao tomar a rota padrao da NAT
+    - name: Configurar eth1 via DHCP
+      copy:
+        dest: /etc/network/interfaces.d/eth1
+        content: |
+          auto eth1
+          iface eth1 inet dhcp
+              metric 1000
+      register: eth1
+
+    - name: Subir eth1
+      shell: ifdown eth1 || true; ifup eth1
+      when: eth1.changed
+
+    - name: Instalar Autofs
+      apt:
+        name: autofs
+        state: present
+
+    - name: Criar diretorio /var/nfs
+      file:
+        path: /var/nfs
+        state: directory
+    # Mapa direto: so o /var/nfs e montado, o resto do /var nao e afetado
+    - name: Adicionar mapa direto no auto.master
+      lineinfile:
+        path: /etc/auto.master
+        line: '/- /etc/auto.nfs'
+      notify: Restart Autofs
+    - name: Criar regra auto.nfs para apontar para o servidor arq
+      copy:
+        dest: /etc/auto.nfs
+        content: "/var/nfs -fstype=nfs,rw arq.{{ dominio }}:/dados/nfs\n"
+      notify: Restart Autofs
+  handlers:
+    - name: Restart Autofs
+      service: name=autofs state=restarted
+
+# DNS do arq nos clientes (db, app e cli)
+- name: Configurar DNS do arq (db, app e cli)
+  hosts: db, app, cli
+  become: yes
+  tasks:
+    # O dhclient sobrescreve o resolv.conf; estas linhas forcam o DNS do arq
+    - name: Fixar DNS e dominio de busca no dhclient
+      blockinfile:
+        path: /etc/dhcp/dhclient.conf
+        block: |
+          supersede domain-name-servers {{ ip_arq }};
+          supersede domain-search "{{ dominio }}";
+    - name: Escrever resolv.conf com o DNS do arq
+      copy:
+        dest: /etc/resolv.conf
+        content: |
+          search {{ dominio }}
+          nameserver {{ ip_arq }}

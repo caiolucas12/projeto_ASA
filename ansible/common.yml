@@ -7,6 +7,7 @@
       apt:
         update_cache: yes
         upgrade: dist
+        lock_timeout: 300   # espera o apt de primeiro boot liberar o lock
 
     - name: Configurar timezone para America/Recife
       timezone:
@@ -86,50 +87,3 @@
     - name: Restart SSH
       service: name=ssh state=restarted
 
-# Montagem automática do NFS (autofs) nos clientes
-- name: Configurar Montagem Automática com Autofs (db, app e cli)
-  hosts: db, app, cli
-  become: yes
-  tasks:
-    - name: Instalar Autofs
-      apt:
-        name: autofs
-        state: present
-
-    - name: Criar diretorio /var/nfs
-      file:
-        path: /var/nfs
-        state: directory
-    # Mapa direto: so o /var/nfs e montado, o resto do /var nao e afetado
-    - name: Adicionar mapa direto no auto.master
-      lineinfile:
-        path: /etc/auto.master
-        line: '/- /etc/auto.nfs'
-      notify: Restart Autofs
-    - name: Criar regra auto.nfs para apontar para o servidor arq
-      copy:
-        dest: /etc/auto.nfs
-        content: "/var/nfs -fstype=nfs,rw arq.{{ dominio }}:/dados/nfs\n"
-      notify: Restart Autofs
-  handlers:
-    - name: Restart Autofs
-      service: name=autofs state=restarted
-
-# DNS do arq nos clientes (db, app e cli)
-- name: Configurar DNS do arq (db, app e cli)
-  hosts: db, app, cli
-  become: yes
-  tasks:
-    # O dhclient sobrescreve o resolv.conf; estas linhas forcam o DNS do arq
-    - name: Fixar DNS e dominio de busca no dhclient
-      blockinfile:
-        path: /etc/dhcp/dhclient.conf
-        block: |
-          supersede domain-name-servers {{ ip_arq }};
-          supersede domain-search "{{ dominio }}";
-    - name: Escrever resolv.conf com o DNS do arq
-      copy:
-        dest: /etc/resolv.conf
-        content: |
-          search {{ dominio }}
-          nameserver {{ ip_arq }}

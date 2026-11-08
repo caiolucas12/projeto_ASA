@@ -7,13 +7,12 @@ nome2: caio
 dominio: gabriel.caio.devops
 
 # Matrículas (usadas na página do Apache)
-matricula_gabriel: "35"   # PLACEHOLDER: trocar pela matrícula completa do Gabriel
-matricula_caio: "99"      # PLACEHOLDER: trocar pela matrícula completa do Caio
-
+matricula_gabriel: "20251380035"
+matricula_caio: "20251380034"
 # Final dos IPs 192.168.56.1XX
 final_arq: "35"           # últimos 2 dígitos da matrícula do Gabriel (igual ao XX do Vagrantfile)
-final_db: "99"            # PLACEHOLDER: últimos 2 dígitos da matrícula do Caio (YY)
-final_app: "40"           # PLACEHOLDER: dígitos definidos pelo grupo (XY)
+final_db: "34"           # ultimos 2 digitos da matricula do Caio (YY)
+final_app: "54"          # XY: ultimo digito do Gabriel (5) + ultimo digito do Caio (4)
 
 ip_arq: "192.168.56.1{{ final_arq }}"
 ip_db: "192.168.56.1{{ final_db }}"
