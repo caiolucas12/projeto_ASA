@@ -12,7 +12,9 @@ NOME2 = "caio"      # primeiro nome do integrante 2
 XX    = "35"      # dois últimos dígitos da matrícula do integrante 1 (arq = 192.168.56.135)
  
 DOMINIO = "#{NOME1}.#{NOME2}.devops"
-REDE    = "vboxnet0"   # rede host-only padrão do VirtualBox (192.168.56.0/24)
+# rede host-only padrão do VirtualBox (192.168.56.0/24); no Windows o nome é outro
+WINDOWS = Vagrant::Util::Platform.windows?
+REDE    = WINDOWS ? "VirtualBox Host-Only Ethernet Adapter" : "vboxnet0"
 # ------------------------------------------------------------
  
 Vagrant.configure("2") do |config|
@@ -35,8 +37,9 @@ Vagrant.configure("2") do |config|
       t.name = "Desabilitar DHCP do VirtualBox (#{momento})"
       t.on_error = :continue
       t.run = {
-        inline: "bash -c 'VBoxManage dhcpserver remove --network=HostInterfaceNetworking-#{REDE} 2>/dev/null || " \
-                "VBoxManage dhcpserver remove --netname HostInterfaceNetworking-#{REDE} 2>/dev/null || true'"
+        inline: WINDOWS ?
+                "& 'C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe' dhcpserver remove --network='HostInterfaceNetworking-#{REDE}'" :
+                "bash -c 'VBoxManage dhcpserver remove --network=HostInterfaceNetworking-#{REDE} 2>/dev/null || true'"
       }
     end
   end
