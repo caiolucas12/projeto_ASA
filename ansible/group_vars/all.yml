@@ -8,8 +8,7 @@ dominio: gabriel.caio.devops
 
 # Matrículas (usadas na página do Apache)
 matricula_gabriel: "20251380035"
-matricula_caio: "20251380034"   # ATENCAO: so os 2 ultimos digitos (34) sao conhecidos; completar o prefixo
-
+matricula_caio: "20251380034"
 # Final dos IPs 192.168.56.1XX
 final_arq: "35"           # últimos 2 dígitos da matrícula do Gabriel (igual ao XX do Vagrantfile)
 final_db: "34"           # ultimos 2 digitos da matricula do Caio (YY)
