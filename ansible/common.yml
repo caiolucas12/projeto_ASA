@@ -44,6 +44,17 @@
         - gabriel
         - caio
 
+    # Forma mais simples: reutiliza a chave pública insecure do Vagrant
+    # (a mesma que o usuário vagrant já usa), assim o acesso por chave funciona
+    # sem gerar pares de chaves. Em produção, usar a chave pública de cada pessoa.
+    - name: Autorizar chave pública para gabriel e caio
+      authorized_key:
+        user: "{{ item }}"
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+      loop:
+        - gabriel
+        - caio
+
     - name: Permitir sudo sem senha para usuários do grupo ifpb
       copy:
         dest: /etc/sudoers.d/ifpb
@@ -63,6 +74,7 @@
         line: "{{ item.line }}"
       loop:
         - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
         - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
         - { regexp: '^#?Banner', line: 'Banner /etc/ssh/banner' }
         - { regexp: '^#?AllowGroups', line: 'AllowGroups vagrant ifpb' }

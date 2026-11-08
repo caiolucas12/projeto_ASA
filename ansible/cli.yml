@@ -10,8 +10,14 @@
           - xauth
         state: present
 
-    - name: Habilitar X11 Forwarding no SSH
+    # X11Forwarding é opção do servidor SSH (sshd_config)
+    - name: Habilitar X11 Forwarding no servidor SSH
       lineinfile:
-        path: /etc/ssh/ssh_config
-        regexp: '^#?\s*ForwardX11 '
-        line: '    ForwardX11 yes'
+        path: /etc/ssh/sshd_config
+        regexp: '^#?\s*X11Forwarding'
+        line: 'X11Forwarding yes'
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart SSH
+      service: name=ssh state=restarted
