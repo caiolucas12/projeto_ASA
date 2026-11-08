@@ -1,4 +1,4 @@
-﻿# Projeto ASA
+# Projeto ASA
 
 Projeto 01 - DevOps com Vagrant e Ansible.
 
@@ -36,11 +36,11 @@ ansible/
   templates/             # dhcpd, named (DNS), zonas, index.html
 ```
 
-## ATENÇÃO: valores PLACEHOLDER
+## Matrículas e IPs
 
-> **Os valores de matrícula do Caio e o IP do app são PLACEHOLDERS e DEVEM ser trocados pelos valores reais antes da entrega.**
+> Matrículas: Gabriel 20251380035, Caio 20251380034. IPs: arq .135 (XX=35), db .134 (YY=34) e app .154.
 >
-> Edite **em um único lugar**: `ansible/group_vars/all.yml`
+> Interpretação do "1XY" do app: XY = último dígito de cada matrícula (5 e 4), logo .154. Para mudar, edite **em um único lugar**: `ansible/group_vars/all.yml`
 > (`matricula_gabriel`, `matricula_caio`, `final_arq`, `final_db`, `final_app`).
 >
 > Mantenha consistente com o `Vagrantfile`: a variável `XX` deve ser igual a `final_arq`

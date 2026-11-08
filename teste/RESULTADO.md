@@ -51,7 +51,7 @@ caio (chave propria):    LOGIN_OK / caio
 senha (gabriel):  Permission denied (publickey).
 root:            Permission denied (publickey).
 authorized_keys: 1 chave em cada usuario, 0 com 'insecure'
-```n
+```
 ## Resolucao de nomes (item 2)
 Adicionado registro cli (192.168.56.50) na zona direta/reversa. getent hosts e ping por nome em db, app e cli:
 ```text
@@ -60,3 +60,22 @@ app: arq=192.168.56.135 db=192.168.56.134  cli=192.168.56.50 ; ping cli.gabriel.
 cli: arq=192.168.56.135 db=192.168.56.134  app=192.168.56.154 ; ping arq.gabriel.caio.devops OK
 ```
 Hospedeiro Windows: nao testado/alterado (usar hosts-windows.txt, ver README).
+
+## Enunciado x implementacao
+| Enunciado | Implementacao |
+|---|---|
+| Box debian/bookworm64, 512 MB (cli 1024), linked_clone, sem guest additions, insert_key=false | Vagrantfile: igual |
+| Gatilho remove DHCP do VirtualBox | trigger before/after up (dhcpserver remove) |
+| arq 192.168.56.1XX, 3 discos 10GB | .135, 3 discos de 10GB |
+| db/app via DHCP + MAC; cli via DHCP | MACs ...02 e ...03; cli sem MAC |
+| Hostnames nome1.nome2.devops | arq/db/app/cli.gabriel.caio.devops |
+| DHCP: autoritativo, 180/3600, faixa 50-100, gw .1, DNS arq | dhcpd.conf.j2 |
+| db 1YY, app 1XY | db .134; app .154 (XY = ultimo digito de cada matricula) |
+| DNS: rede interna, forwarders 1.1.1.1/8.8.8.8, zonas direta/reversa | named.conf.options/local + zonas |
+| LVM vg dados, lv ifpb 15G ext4 em /dados | arq.yml |
+| NFS /dados/nfs, 192.168.56.0/24, nfs-ifpb, all_squash, sync+no_wdelay, sem shell | arq.yml |
+| autofs /var/nfs em db, app, cli | clientes.yml |
+| SSH, sudo, chrony, timezone, grupo ifpb, usuarios, banner, NFS client | common.yml |
+| mariadb, apache2+index.html, firefox-esr+xauth+X11 | db.yml, app.yml, cli.yml |
+| README com integrantes, disciplina, professor, execucao | README.md |
+Resultado: nenhuma divergencia encontrada.
