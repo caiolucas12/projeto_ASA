@@ -97,7 +97,7 @@
 
   handlers:
     - name: Restart Bind
-      service: name=named state=restarted
+      service: name=bind9 state=restarted
     - name: Restart DHCP
       service: name=isc-dhcp-server state=restarted
     - name: Exportar NFS
