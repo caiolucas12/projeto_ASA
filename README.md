@@ -102,15 +102,12 @@ IPv4 > DNS preferencial `192.168.56.135`.
 
 Dentro de cli, db e app a resolução já funciona pelo DNS do arq: `getent hosts db.gabriel.caio.devops`.
 
-## Chave SSH dos usuários gabriel e caio
-Em `ansible/common.yml` são criados o grupo `ifpb` e os usuários `gabriel` e `caio` (com `generate_ssh_key`).
-Por simplicidade, a chave pública *insecure* do Vagrant é autorizada para os dois (`authorized_key`),
-então o acesso funciona com a mesma chave privada do Vagrant:
-```
-ssh -i ~/.vagrant.d/insecure_private_key gabriel@arq.gabriel.caio.devops
-```
-O SSH fica apenas com chave (sem senha, sem root) e com banner de aviso. Em produção, use a chave pública de cada pessoa.
-
+## Chave SSH dos usu?rios gabriel e caio
+Em `ansible/common.yml` s?o criados o grupo `ifpb` e os usu?rios `gabriel` e `caio`. Cada usu?rio recebe seu **pr?prio par de chaves**
+(`generate_ssh_key`) e a chave p?blica dele ? colocada no pr?prio `authorized_keys` (m?dulo `authorized_key`).
+O usu?rio `vagrant` continua com a chave insecure do Vagrant, usada pelo Ansible. O SSH aceita apenas chave (sem senha, sem root),
+somente para os grupos `vagrant` e `ifpb`, e mostra o banner de aviso.
+O login por chave de gabriel e caio, e a recusa de senha e de root, est?o registrados em `teste/RESULTADO.md`.
 ## Como validar
 Rápido: em cada VM rode `vagrant ssh <vm> -c "bash /vagrant/teste/verificar.sh"`. Resultados anteriores estão em `teste/RESULTADO.md`.
 
