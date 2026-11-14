@@ -34,30 +34,33 @@
         name: ifpb
         state: present
 
-    - name: Criar usuários gabriel e caio
+    - name: Criar usuários dos integrantes (membros do grupo ifpb)
       user:
         name: "{{ item }}"
         groups: ifpb
         append: yes
-        generate_ssh_key: yes
         shell: /bin/bash
-      register: chaves
       loop:
-        - gabriel
-        - caio
+        - "{{ nome1 }}"
+        - "{{ nome2 }}"
 
-    # Autoriza a chave pública gerada para cada usuário no próprio authorized_keys
+    # A chave pública vem de keys/<nome>.pub, gerada no controlador pelo chaves.yml.
+    # exclusive: só essa chave fica autorizada (remove chaves antigas).
     - name: Autorizar a chave pública de cada usuário
       authorized_key:
-        user: "{{ item.item }}"
-        key: "{{ item.ssh_public_key }}"
-      loop: "{{ chaves.results }}"
+        user: "{{ item }}"
+        key: "{{ lookup('file', playbook_dir ~ '/../keys/' ~ item ~ '.pub') }}"
+        exclusive: yes
+      loop:
+        - "{{ nome1 }}"
+        - "{{ nome2 }}"
 
     - name: Permitir sudo sem senha para usuários do grupo ifpb
       copy:
         dest: /etc/sudoers.d/ifpb
-        content: "%ifpb ALL=(ALL) NOPASSWD: ALL"
+        content: "%ifpb ALL=(ALL) NOPASSWD: ALL\n"
         mode: '0440'
+        validate: 'visudo -cf %s'
 
     - name: Criar banner de boas-vindas do SSH
       copy:
@@ -70,6 +73,7 @@
         path: /etc/ssh/sshd_config
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
+        validate: '/usr/sbin/sshd -t -f %s'   # não grava um sshd_config inválido (evita perder o acesso)
       loop:
         - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
         - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }

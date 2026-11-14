@@ -1,6 +1,5 @@
 # Variáveis usadas por todos os playbooks e templates.
-# ATENÇÃO: valores abaixo marcados como PLACEHOLDER devem ser trocados
-# pelas matrículas reais antes da entrega. É o único lugar a ser editado.
+# É o único lugar (junto com NOME1/NOME2/XX no topo do Vagrantfile) a ser editado.
 
 nome1: gabriel
 nome2: caio
@@ -17,3 +16,6 @@ final_app: "54"          # XY: ultimo digito do Gabriel (5) + ultimo digito do C
 ip_arq: "192.168.56.1{{ final_arq }}"
 ip_db: "192.168.56.1{{ final_db }}"
 ip_app: "192.168.56.1{{ final_app }}"
+final_cli: "50"          # cli recebe o 1o IP do pool DHCP (50-100); MAC fixo no Vagrantfile
+
+ip_cli: "192.168.56.{{ final_cli }}"

@@ -92,6 +92,7 @@
     - name: Configurar compartilhamento no /etc/exports
       lineinfile:
         path: /etc/exports
+        regexp: '^/dados/nfs\s'
         line: "/dados/nfs 192.168.56.0/24(rw,sync,no_wdelay,all_squash,anonuid={{ nfs_user.uid }},anongid={{ nfs_user.group }})"
       notify: Exportar NFS
 

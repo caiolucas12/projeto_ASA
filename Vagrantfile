@@ -48,6 +48,8 @@ Vagrant.configure("2") do |config|
   config.vm.define "arq" do |arq|
     arq.vm.hostname = "arq.#{DOMINIO}"
     arq.vm.network "private_network", ip: "192.168.56.1#{XX}"
+    # porta SSH fixa no host (o inventário do Ansible depende disso)
+    arq.vm.network "forwarded_port", guest: 22, host: 2201, id: "ssh", auto_correct: false
  
     # 3 discos adicionais de 10 GB
     (1..3).each do |i|
@@ -58,6 +60,7 @@ Vagrant.configure("2") do |config|
   # ---------------- Servidor de banco de dados (db) -----------
   config.vm.define "db" do |db|
     db.vm.hostname = "db.#{DOMINIO}"
+    db.vm.network "forwarded_port", guest: 22, host: 2202, id: "ssh", auto_correct: false
     # IP via DHCP (servidor DHCP do arq) com reserva por MAC
     db.vm.network "private_network",
                   type: "dhcp",
@@ -69,6 +72,7 @@ Vagrant.configure("2") do |config|
   # ---------------- Servidor de aplicação (app) ---------------
   config.vm.define "app" do |app|
     app.vm.hostname = "app.#{DOMINIO}"
+    app.vm.network "forwarded_port", guest: 22, host: 2203, id: "ssh", auto_correct: false
     app.vm.network "private_network",
                    type: "dhcp",
                    mac: "080027000003",
@@ -79,8 +83,12 @@ Vagrant.configure("2") do |config|
   # ---------------- Host cliente (cli) ------------------------
   config.vm.define "cli" do |cli|
     cli.vm.hostname = "cli.#{DOMINIO}"
+    cli.vm.network "forwarded_port", guest: 22, host: 2204, id: "ssh", auto_correct: false
+    # IP via DHCP (pool 50-100). MAC fixo para o cli receber sempre o mesmo IP
+    # (o DNS do arq tem um registro A para ele; o script de verificação usa cli.<dominio>)
     cli.vm.network "private_network",
                    type: "dhcp",
+                   mac: "080027000004",
                    name: REDE,
                    auto_config: false
     cli.vm.provider "virtualbox" do |vb|

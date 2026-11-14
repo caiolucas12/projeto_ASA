@@ -1,7 +1,8 @@
 # Playbook principal: executa todos os playbooks em ordem
+- import_playbook: chaves.yml     # gera keys/<nome> no controlador
 - import_playbook: common.yml
 - import_playbook: arq.yml
 - import_playbook: db.yml
 - import_playbook: app.yml
 - import_playbook: cli.yml
-- import_playbook: clientes.yml
+- import_playbook: clientes.yml   # por último: depende do DHCP/DNS/NFS do arq

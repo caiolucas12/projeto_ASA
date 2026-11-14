@@ -1,0 +1,25 @@
+# Gera, NO COMPUTADOR QUE RODA O ANSIBLE (hospedeiro), um par de chaves ed25519 para cada
+# integrante em keys/<nome> e keys/<nome>.pub (na raiz do projeto).
+# As chaves públicas são distribuídas às VMs pelo common.yml; as privadas ficam só aqui
+# (o script de verificação do professor usa keys/<nome>).
+# Idempotente: não recria chaves que já existem.
+- name: Gerar chaves SSH dos integrantes (controlador)
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    pasta_chaves: "{{ playbook_dir }}/../keys"
+  tasks:
+    - name: Criar diretório keys/
+      file:
+        path: "{{ pasta_chaves }}"
+        state: directory
+        mode: '0700'
+
+    - name: Gerar par de chaves de cada integrante
+      command:
+        argv: [ssh-keygen, -q, -t, ed25519, -N, "", -C, "{{ item }}@{{ dominio }}", -f, "{{ pasta_chaves }}/{{ item }}"]
+        creates: "{{ pasta_chaves }}/{{ item }}"
+      loop:
+        - "{{ nome1 }}"
+        - "{{ nome2 }}"

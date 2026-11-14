@@ -1,8 +1,24 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Projeto 01 - DevOps</title></head>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Projeto 01 - DevOps com Vagrant e Ansible</title>
+</head>
 <body>
   <h1>Projeto 01 - DevOps com Vagrant e Ansible</h1>
-  <p><strong>Integrantes:</strong> Gabriel (Matrícula: {{ matricula_gabriel }}), Caio (Matrícula: {{ matricula_caio }})</p>
+  <h2>Descrição do projeto</h2>
+  <p>
+    Infraestrutura virtual provisionada com <strong>Vagrant</strong> (4 VMs Debian no VirtualBox) e
+    configurada com <strong>Ansible</strong>: servidor de arquivos (<code>arq</code>) com DHCP, DNS (bind9),
+    LVM e NFS; servidor de banco de dados (<code>db</code>, MariaDB); servidor de aplicação
+    (<code>app</code>, Apache, que serve esta página) e host cliente (<code>cli</code>, Firefox via X11).
+    Os clientes montam automaticamente o compartilhamento NFS do <code>arq</code> em <code>/var/nfs</code> (autofs).
+  </p>
+  <p>Domínio: <code>{{ dominio }}</code> &mdash; Disciplina: Administração de Sistemas Abertos (IFPB, campus João Pessoa) &mdash; Professor: Leonidas Lima.</p>
+  <h2>Integrantes</h2>
+  <ul>
+    <li>{{ nome1 | capitalize }} &mdash; matrícula {{ matricula_gabriel }}</li>
+    <li>{{ nome2 | capitalize }} &mdash; matrícula {{ matricula_caio }}</li>
+  </ul>
 </body>
 </html>
