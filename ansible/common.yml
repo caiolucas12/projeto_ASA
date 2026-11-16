@@ -3,6 +3,9 @@
   hosts: all
   become: yes
   tasks:
+    - name: Definir o dispositivo de instalação do GRUB (evita falha no upgrade)
+      shell: echo "grub-pc grub-pc/install_devices multiselect /dev/sda" | debconf-set-selections
+      changed_when: false
     - name: Atualizar repositórios e pacotes do sistema
       apt:
         update_cache: yes
