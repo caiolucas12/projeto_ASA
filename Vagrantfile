@@ -44,6 +44,18 @@ Vagrant.configure("2") do |config|
     end
   end
  
+  # Provisionamento automático: quando a ÚLTIMA VM (cli) termina de subir, as 4 já estão
+  # ligadas e este gatilho roda scripts/provisionar.sh (hospedeiro + Ansible).
+  # Para subir só as VMs, sem provisionar:  SEM_ANSIBLE=1 vagrant up
+  # (Linux/macOS; no Windows o Ansible não roda no hospedeiro - veja teste/README.md)
+  unless WINDOWS || ENV["SEM_ANSIBLE"]
+    config.trigger.after :up do |t|
+      t.name = "Provisionar com Ansible (scripts/provisionar.sh)"
+      t.only_on = ["cli"]
+      t.run = { inline: "bash '#{File.expand_path("scripts/provisionar.sh", File.dirname(__FILE__))}'" }
+    end
+  end
+
   # ---------------- Servidor de arquivos (arq) ----------------
   config.vm.define "arq" do |arq|
     arq.vm.hostname = "arq.#{DOMINIO}"
