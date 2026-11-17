@@ -28,20 +28,10 @@ Vagrant.configure("2") do |config|
     vb.check_guest_additions = false     # não verifica guest additions
   end
  
-  # Gatilhos: desabilitam o servidor DHCP do VirtualBox na rede host-only.
-  # Rodam antes E depois do "up", pois o Vagrant recria o servidor DHCP
-  # nas VMs que usam private_network do tipo dhcp.
-  # (Linux/macOS; no Windows o nome da rede é diferente - veja o README)
-  [:before, :after].each do |momento|
-    config.trigger.send(momento, :up) do |t|
-      t.name = "Desabilitar DHCP do VirtualBox (#{momento})"
-      t.on_error = :continue
-      t.run = {
-        inline: WINDOWS ?
-                "& 'C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe' dhcpserver remove --network='HostInterfaceNetworking-#{REDE}'" :
-                "bash -c 'VBoxManage dhcpserver remove --network=HostInterfaceNetworking-#{REDE} 2>/dev/null || true'"
-      }
-    end
+  # Gatilho: interrompe o servidor DHCP do VirtualBox (só o DHCP do arq deve responder).
+  config.trigger.before :"Vagrant::Action::Builtin::WaitForCommunicator", type: :action do |t|
+    t.warn = "Iterrompe o servidor dhcp do virtualbox"
+    t.run = {inline: "vboxmanage dhcpserver stop --interface vboxnet0"}
   end
  
   # Provisionamento automático: quando a ÚLTIMA VM (cli) termina de subir, as 4 já estão
