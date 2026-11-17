@@ -36,7 +36,9 @@ Vagrantfile                 # 4 VMs (portas SSH fixas 2201-2204)
 Doc/                        # enunciado
 scripts/
   configurar-host.sh        # /etc/hosts + ~/.ssh/config do hospedeiro
+  provisionar.sh            # chamado pelo vagrant up: hospedeiro + DHCP + Ansible
   rodar-ansible.sh          # checagens + ansible-playbook site.yml
+  preflight.sh              # checagem prévia (somente leitura)
   verifica-proj1.py         # script de verificação do professor
 ansible/
   ansible.cfg  inventory.ini  requirements.yml
@@ -65,16 +67,20 @@ sudo apt install ansible openssh-client python3
 ```bash
 git clone https://github.com/caiolucas12/projeto_ASA.git && cd projeto_ASA
 
-vagrant up                          # cria as 4 VMs (arq primeiro)
-VBoxManage list dhcpservers         # deve vir VAZIO (gatilho removeu o DHCP do VirtualBox)
+bash scripts/preflight.sh           # (opcional) checa KVM, VMs de outros grupos, portas, RAM
+sudo -v                             # (opcional) deixa a senha do sudo em cache para o passo automático
+vagrant up --provider=virtualbox    # cria as VMs E configura tudo (leva de 30 a 40 minutos)
 
-bash scripts/rodar-ansible.sh       # gera keys/, configura as 4 VMs (leva vários minutos)
-bash scripts/configurar-host.sh     # nomes no hospedeiro (pede sudo)
-
-python3 scripts/verifica-proj1.py gabriel.caio    # verificação do professor (rodar na raiz do projeto)
+python3 scripts/verifica-proj1.py gabriel.caio    # verificação do professor (na raiz do projeto)
 ```
 
-Para refazer do zero: `vagrant destroy -f && vagrant up` e rode o Ansible de novo.
+O `vagrant up` faz tudo sozinho. Quando a última VM (`cli`) sobe, um gatilho do Vagrantfile roda
+`scripts/provisionar.sh`, que: (1) configura nomes e SSH no hospedeiro (pede a senha do sudo, uma vez),
+(2) remove o DHCP do VirtualBox e (3) executa o `site.yml` do Ansible nas 4 VMs.
+
+- Subir só as VMs, sem provisionar: `SEM_ANSIBLE=1 vagrant up`
+- Refazer a configuração com as VMs já no ar: `bash scripts/provisionar.sh` (ou só o Ansible: `bash scripts/rodar-ansible.sh`)
+- Refazer do zero: `vagrant destroy -f && vagrant up`
 
 ## Como validar manualmente
 
