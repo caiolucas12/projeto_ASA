@@ -3,14 +3,14 @@
   hosts: all
   become: yes
   tasks:
-    - name: Definir o dispositivo de instalação do GRUB (evita falha no upgrade)
-      shell: echo "grub-pc grub-pc/install_devices multiselect /dev/sda" | debconf-set-selections
+    - name: Descobrir o disco do sistema (raiz)
+      shell: lsblk -no PKNAME "$(findmnt -n -o SOURCE /)" | head -1
+      register: disco_raiz
       changed_when: false
-    - name: Atualizar repositórios e pacotes do sistema
-      apt:
-        update_cache: yes
-        upgrade: dist
-        lock_timeout: 300   # espera o apt de primeiro boot liberar o lock
+
+    - name: Definir o dispositivo de instalação do GRUB (evita falha no upgrade)
+      shell: echo "grub-pc grub-pc/install_devices multiselect /dev/{{ disco_raiz.stdout }}" | debconf-set-selections
+      changed_when: false
 
     - name: Configurar timezone para America/Recife
       timezone:
