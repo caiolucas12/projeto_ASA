@@ -16,6 +16,12 @@
       timezone:
         name: America/Recife
 
+    - name: Atualizar o SO
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+
     - name: Instalar Chrony e Cliente NFS
       apt:
         name:

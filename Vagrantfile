@@ -31,7 +31,8 @@ Vagrant.configure("2") do |config|
   # Gatilho: interrompe o servidor DHCP do VirtualBox (só o DHCP do arq deve responder).
   config.trigger.before :"Vagrant::Action::Builtin::WaitForCommunicator", type: :action do |t|
     t.warn = "Iterrompe o servidor dhcp do virtualbox"
-    t.run = {inline: "vboxmanage dhcpserver stop --interface vboxnet0"}
+    t.run = {inline: "vboxmanage dhcpserver stop --interface vboxnet0 || true"}
+    t.on_error = :continue
   end
  
   # Provisionamento automático: quando a ÚLTIMA VM (cli) termina de subir, as 4 já estão
