@@ -51,11 +51,18 @@
         dest: /etc/bind/db.192.168.56
       notify: Restart Bind
 
+    - name: Descobrir os 3 discos de dados (todos menos o disco do sistema)
+      shell: |
+        root=$(lsblk -no PKNAME "$(findmnt -n -o SOURCE /)" | head -1)
+        lsblk -dno NAME,TYPE | awk -v r="$root" '$2=="disk" && $1!=r {print "/dev/"$1}'
+      register: discos_dados
+      changed_when: false
+
     # LVM: 3 discos adicionais em um volume group
     - name: Criar Volume Group (dados) com os 3 discos adicionais
       lvg:
         vg: dados
-        pvs: /dev/sdb,/dev/sdc,/dev/sdd
+        pvs: "{{ discos_dados.stdout_lines }}"
 
     - name: Criar Logical Volume (ifpb) de 15GB
       lvol:
