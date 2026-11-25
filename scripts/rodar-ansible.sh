@@ -2,7 +2,7 @@
 # Roda o site.yml do Ansible com verificações prévias. Uso: bash scripts/rodar-ansible.sh [opções do ansible-playbook]
 set -euo pipefail
 cd "$(dirname "$0")/../ansible"
-# força o uso do ansible.cfg (o Ansible o ignora em diretórios gravaveis por todos, ex.: /mnt/c no WSL)
+# força o uso do ansible.cfg (o Ansible o ignora em diretórios gravaveis por todos)
 export ANSIBLE_CONFIG="$PWD/ansible.cfg"
 
 command -v ansible-playbook >/dev/null || { echo "ERRO: ansible não instalado (sudo apt install ansible)"; exit 1; }
