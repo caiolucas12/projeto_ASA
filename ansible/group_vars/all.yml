@@ -4,6 +4,7 @@
 nome1: gabriel
 nome2: caio
 dominio: gabriel.caio.devops
+integrantes: ["{{ nome1 }}", "{{ nome2 }}"]   # usado nos loops (usuários e chaves)
 
 # Matrículas (usadas na página do Apache)
 matricula_gabriel: "20251380035"

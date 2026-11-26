@@ -8,7 +8,6 @@
         name:
           - isc-dhcp-server
           - bind9
-          - bind9utils
           - nfs-kernel-server
           - lvm2
         state: present
@@ -26,43 +25,23 @@
         line: 'INTERFACESv4="eth1"'
       notify: Restart DHCP
 
-    # DNS autoritativo: opções, zonas direta e reversa
-    - name: Configurar opções do Bind9
+    # DNS autoritativo: opções do bind, declaração das zonas e arquivos das zonas direta e reversa
+    - name: Configurar o Bind9 (opções e zonas)
       template:
-        src: templates/named.conf.options.j2
-        dest: /etc/bind/named.conf.options
+        src: "templates/{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: named.conf.options.j2, dest: /etc/bind/named.conf.options }
+        - { src: named.conf.local.j2,   dest: /etc/bind/named.conf.local }
+        - { src: zona-direta.j2,        dest: "/etc/bind/db.{{ dominio }}" }
+        - { src: zona-reversa.j2,       dest: /etc/bind/db.192.168.56 }
       notify: Restart Bind
-
-    - name: Declarar zonas direta e reversa
-      template:
-        src: templates/named.conf.local.j2
-        dest: /etc/bind/named.conf.local
-      notify: Restart Bind
-
-    - name: Criar arquivo da zona direta
-      template:
-        src: templates/zona-direta.j2
-        dest: "/etc/bind/db.{{ dominio }}"
-      notify: Restart Bind
-
-    - name: Criar arquivo da zona reversa
-      template:
-        src: templates/zona-reversa.j2
-        dest: /etc/bind/db.192.168.56
-      notify: Restart Bind
-
-    - name: Descobrir os 3 discos de dados (todos menos o disco do sistema)
-      shell: |
-        root=$(lsblk -no PKNAME "$(findmnt -n -o SOURCE /)" | head -1)
-        lsblk -dno NAME,TYPE | awk -v r="$root" '$2=="disk" && $1!=r {print "/dev/"$1}'
-      register: discos_dados
-      changed_when: false
 
     # LVM: 3 discos adicionais em um volume group
     - name: Criar Volume Group (dados) com os 3 discos adicionais
       lvg:
         vg: dados
-        pvs: "{{ discos_dados.stdout_lines }}"
+        pvs: /dev/sdb,/dev/sdc,/dev/sdd
 
     - name: Criar Logical Volume (ifpb) de 15GB
       lvol:

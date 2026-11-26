@@ -3,24 +3,21 @@
   hosts: all
   become: yes
   tasks:
-    - name: Descobrir o disco do sistema (raiz)
-      shell: lsblk -no PKNAME "$(findmnt -n -o SOURCE /)" | head -1
-      register: disco_raiz
+    # A box vem sem dispositivo de instalação do GRUB no debconf; sem isto o upgrade do grub-pc
+    # falha de forma não interativa (dpkg error code 1).
+    - name: Definir o dispositivo de instalação do GRUB (evita falha no upgrade)
+      shell: echo "grub-pc grub-pc/install_devices multiselect /dev/sda" | debconf-set-selections
       changed_when: false
 
-    - name: Definir o dispositivo de instalação do GRUB (evita falha no upgrade)
-      shell: echo "grub-pc grub-pc/install_devices multiselect /dev/{{ disco_raiz.stdout }}" | debconf-set-selections
-      changed_when: false
+    - name: Atualizar repositórios e pacotes do sistema
+      apt:
+        update_cache: yes
+        upgrade: dist
+        lock_timeout: 300   # espera o apt de primeiro boot liberar o lock
 
     - name: Configurar timezone para America/Recife
       timezone:
         name: America/Recife
-
-    - name: Atualizar o SO
-      apt:
-        update_cache: yes
-        upgrade: dist
-        cache_valid_time: 3600
 
     - name: Instalar Chrony e Cliente NFS
       apt:
@@ -49,9 +46,7 @@
         groups: ifpb
         append: yes
         shell: /bin/bash
-      loop:
-        - "{{ nome1 }}"
-        - "{{ nome2 }}"
+      loop: "{{ integrantes }}"
 
     # A chave pública vem de keys/<nome>.pub, gerada no controlador pelo chaves.yml.
     # exclusive: só essa chave fica autorizada (remove chaves antigas).
@@ -60,9 +55,7 @@
         user: "{{ item }}"
         key: "{{ lookup('file', playbook_dir ~ '/../keys/' ~ item ~ '.pub') }}"
         exclusive: yes
-      loop:
-        - "{{ nome1 }}"
-        - "{{ nome2 }}"
+      loop: "{{ integrantes }}"
 
     - name: Permitir sudo sem senha para usuários do grupo ifpb
       copy:
