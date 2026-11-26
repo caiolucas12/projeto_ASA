@@ -12,9 +12,7 @@ NOME2 = "caio"      # primeiro nome do integrante 2
 XX    = "35"      # dois últimos dígitos da matrícula do integrante 1 (arq = 192.168.56.135)
  
 DOMINIO = "#{NOME1}.#{NOME2}.devops"
-# rede host-only padrão do VirtualBox (192.168.56.0/24); no Windows o nome é outro
-WINDOWS = Vagrant::Util::Platform.windows?
-REDE    = WINDOWS ? "VirtualBox Host-Only Ethernet Adapter" : "vboxnet0"
+REDE    = "vboxnet0"   # rede host-only padrão do VirtualBox (192.168.56.0/24)
 # ------------------------------------------------------------
  
 Vagrant.configure("2") do |config|
@@ -37,8 +35,7 @@ Vagrant.configure("2") do |config|
   # Provisionamento automático: quando a ÚLTIMA VM (cli) termina de subir, as 4 já estão
   # ligadas e este gatilho roda scripts/provisionar.sh (hospedeiro + Ansible).
   # Para subir só as VMs, sem provisionar:  SEM_ANSIBLE=1 vagrant up
-  # (Linux/macOS; no Windows o Ansible não roda no hospedeiro)
-  unless WINDOWS || ENV["SEM_ANSIBLE"]
+  unless ENV["SEM_ANSIBLE"]
     config.trigger.after :up do |t|
       t.name = "Provisionar com Ansible (scripts/provisionar.sh)"
       t.only_on = ["cli"]
@@ -97,5 +94,4 @@ Vagrant.configure("2") do |config|
       vb.memory = 1024
     end
   end
-end
- 
+end 
